@@ -1,15 +1,11 @@
 import socket
 import time
 import argparse
-# import _thread
-# import concurrent.futures
 
 # Argument parser. Pass port as arg
 parser = argparse.ArgumentParser()
-#parser.add_argument("ports", nargs='+', help="target server ports",type=int)
 parser.add_argument("--username", help="Unique username",type=str)
 args = parser.parse_args()
-#print("Target server ports:", args.ports)
 print("Username:", args.username)
 
 #-------------Server addr-------------------------
@@ -30,6 +26,6 @@ while True:
         m = (args.username+":"+r[1]).encode()
         c.send(m)
     elif r[0]=='TABLE':
-        print(r)
+        print('Table received')
     else:
         print("Message received")

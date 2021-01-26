@@ -6,10 +6,8 @@ import concurrent.futures
 
 # Argument parser. Pass port as arg
 parser = argparse.ArgumentParser()
-#parser.add_argument("ports", nargs='+', help="target server ports",type=int)
 parser.add_argument("--server_port", help="server ports",type=int)
 args = parser.parse_args()
-#print("Target server ports:", args.ports)
 print("Server port:", args.server_port)
 
 #-------------Server----------------------------
@@ -31,6 +29,7 @@ def ping(c):
     username = r_message.split(':')[0]
     tr = time.time()
     tft = (tr - ts)*1000
+    print(tft)
     return (username,c,c.getpeername(),tft)
 
 class Distribute_Server:
@@ -82,7 +81,10 @@ def run_server(ds,s):
 _thread.start_new_thread(run_server,(ds,s,))
 
 while True:
-    time.sleep(5)
+    time.sleep(10)
+    for i in ds.clients_dict:
+        r = ping(ds.clients_dict[i][0])
+        ds.clients_dict[i][-1] = r[-1]
     ds.sort_clients()
     ds.show_table()
     ds.send_table()
