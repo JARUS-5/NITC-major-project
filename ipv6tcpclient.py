@@ -1,6 +1,6 @@
 import socket
 
-server_addr,server_port = "2405:201:f008:ac36:8623:348d:9204:e1e4",8000
+server_addr,server_port = "2409:4073:105:2beb:67cd:717a:ecab:73d5",8000
 
 c = socket.socket(socket.AF_INET6,socket.SOCK_STREAM)
 c.connect((server_addr,server_port,0,0))
