@@ -16,7 +16,7 @@ s.bind((bind_addr,8000))
 print("Binded to",bind_addr,"at port 8000")
 
 while True:
-    s.sendto(b'Works',(peer_addr,8000))
+    s.sendto(b'from Suraj S',(peer_addr,8000))
     s.settimeout(1)
     try:
         message = s.recvfrom(1024)
@@ -24,3 +24,5 @@ while True:
     except:
         continue
     # time.sleep(1)
+
+#stunclient.exe --localport 8080 --protocol udp stun.l.google.com 19302
