@@ -11,8 +11,8 @@ from multiprocessing import Process
 
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 192000
-CHUNK = 1024*16
+RATE = 44100
+CHUNK = 4096
 
 server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM) #Video server
 host_name  = socket.gethostname()
@@ -40,19 +40,19 @@ def vid_client(addr,client_socket):
             payload_size = struct.calcsize("Q")
             while True:
                 while len(data) < payload_size:
-                    packet = client_socket.recv(16*1024) # 4K
+                    packet = client_socket.recv(4*1024) # 4K
                     if not packet: break
                     data+=packet
                 packed_msg_size = data[:payload_size]
                 data = data[payload_size:]
                 msg_size = struct.unpack("Q",packed_msg_size)[0] 
                 while len(data) < msg_size:
-                    data += client_socket.recv(16*1024)
+                    data += client_socket.recv(4*1024)
                 frame_data = data[:msg_size]
                 data  = data[msg_size:]
                 frame = pickle.loads(frame_data)
                 text  =  f"CLIENT: {addr}"
-                frame =  ps.putBText(frame,text,10,10,vspace=10,hspace=1,font_scale=0.7, 						background_RGB=(255,0,0),text_RGB=(255,250,250))
+                frame =  ps.putBText(frame,text,10,10,vspace=10,hspace=1,font_scale=0.7,background_RGB=(255,0,0),text_RGB=(255,250,250))
                 cv2.imshow(f"FROM {addr}",frame)
                 key = cv2.waitKey(1) & 0xFF
                 if key  == ord('q'):
@@ -67,23 +67,23 @@ def aud_client(audio_address,audio_client):
         print('AUDIO CLIENT {} CONNECTED!'.format(audio_address))
         if audio_client:
             while True:
-                audio_data=audio_client.recv(CHUNK)
-                while audio_data!="":
-                    audio_data=audio_client.recv(CHUNK)
-                    stream.write(audio_data)
+                audio_data=audserversocket.recv(CHUNK)
+                stream.write(audio_data)
     except KeyboardInterrupt:
         print(f"Disconnecting AUDIO from client {audio_address}")
-        stream.stop_stream()
+        audio_client.close()
         stream.close()
         audio.terminate()
-        audio_client.close()
+def multiprocess(addr,client_socket,audio_address,audio_client):
+    process_1=Process(target=vid_client(addr,client_socket)) #Video process
+    process_2=Process(target=aud_client(audio_address,audio_client)) #Audio process
+    process_2.start()
+    process_1.start()
 
 while True:
     client_socket,addr = server_socket.accept() #Getting video client and video address
     audio_client, audio_address=audserversocket.accept() #Getting audio client and audio address
     print(audio_client,audio_address)
-    video_thread = threading.Thread(target=vid_client, args=(addr,client_socket))
-    audio_thread = threading.Thread(target=aud_client, args=(audio_address,audio_client))
-    video_thread.start()
-    audio_thread.start()
+    thread = threading.Thread(target=multiprocess, args=(addr,client_socket,audio_address,audio_client))
+    thread.start()
     print("TOTAL CLIENTS ",threading.activeCount() - 1)

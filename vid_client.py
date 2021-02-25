@@ -44,6 +44,3 @@ if client_socket and audio_socket:
         except:
             print('VIDEO FINISHED!')
             break
-
-         
-
