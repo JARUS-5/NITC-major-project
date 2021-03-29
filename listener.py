@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 
 # define streamer IP and ports
-streamer_IP = "192.168.1.11"
+streamer_IP = "192.168.29.11"
 streamer_tcp_port = 60000
 streamer_udp_port = 60001
 

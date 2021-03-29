@@ -2,18 +2,22 @@ import socket
 import time
 import cv2
 import threading
+import numpy as np
 
 # get streamers's IP address
-streamer_name = socket.gethostname()
-streamer_IP = socket.gethostbyname(streamer_name)
+#streamer_name = socket.gethostname()
+#streamer_IP = socket.gethostbyname(streamer_name)
+
+streamer_name = 'JARUS'
+streamer_IP = '127.0.0.1'
 
 # define all port numbers
 streamer_tcp_port = 60000
 streamer_audio_udp_port = 60001
-streamer_video_udp_port = 60005
-listener_tcp_port = 60002
-listener_audio_udp_port = 60003
-listener_video_udp_port = 60004
+streamer_video_udp_port = 60002
+listener_tcp_port = 60003
+listener_audio_udp_port = 60004
+listener_video_udp_port = 60005
 
 # print streamer info
 print("Streamer Name: " + streamer_name)
@@ -28,19 +32,18 @@ listener_tcp_sockets = []
 listener_IP_list = []
 
 # function to create the streamer "send list"
-def create_streamer_send_list(num_listener):
+def create_streamer_send_list(listener_IP_list):
     send_list = []
     i = 1
     while True:
         index = 2**i-2
-        if index < num_listener:
-            send_list.append(index)
+        if index < len(listener_IP_list):
+            send_list.append(listener_IP_list[index])
         else:
             break
         i += 1
+    print(send_list)
     return send_list
-
-####################################################################
 
 udp_video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_video_socket.bind((streamer_IP, streamer_video_udp_port))
@@ -51,111 +54,71 @@ buf = 0
 
 def video_streamer():
     global buf
-    while webcam.isOpened():
+    frame = np.zeros((50,50,3))
+    cv2.imshow("Streamer",frame)
+    while (webcam.isOpened()) and (cv2.getWindowProperty("Streamer", cv2.WND_PROP_VISIBLE) >= 1):
         retval, frame = webcam.read()
         frame = cv2.resize(frame, (50, 50))
         buf = cv2.imencode('.jpg', frame)[1]
-
-        #for i in send_list:
-        #    udp_video_socket.sendto(buf, (ip, listener_video_udp_port))
         cv2.imshow("Streamer",frame)
         cv2.waitKey(33)
+    webcam.release()
+    cv2.destroyAllWindows()
 
-def thread_client(udp_video_socket,client_sock,client_ip):
+def thread_vid_client(udp_video_socket,client_addr):
     global send_list
     global buf
     while True:
         try:
-            if client_ip in send_list:
-                udp_video_socket.sendto(buf, (client_ip, 60004))
+            if client_addr in send_list:
+                udp_video_socket.sendto(buf, (client_addr[0],client_addr[1]+2))
         except:
             break
 
-thread_client_ls = []
+def thread_client_commander(tcp_socket):
+    global listener_IP_list
+    global send_list
+    dl = []
+    ping_time = 100
+    for i in listener_IP_list:
+        dl.append({'ip':i,'ping':ping_time})
+    d = {'data':dl}
+
+    for i in range(len(listener_IP_list)):
+        try:
+            tcp_socket.sendall(str(d).encode(),listener_IP_list[i])
+        except:
+            del listener_IP_list[i]
+            send_list = create_streamer_send_list(listener_IP_list)
+    time.sleep(5)
+
+thread_vid_client_ls = []
+
+thread_commnd_client = threading.Thread(target=thread_client_commander,args=(tcp_socket,))
 video_thread = threading.Thread(target=video_streamer)
 video_thread.start()
 
+tcp_socket.listen(10)
+tcp_socket.settimeout(5)
+
 while True:
     try:
-        tcp_socket.listen()
-        sock, addr = tcp_socket.accept()
-        # store listener IP address
-        listener_IP_list.append(addr[0])
-        # store tcp client socket
-        listener_tcp_sockets.append(sock)
-        send_list = create_streamer_send_list(len(listener_IP_list))
-        #thread_client_ls.append(threading.Thread(target=thread_client,args=(udp_video_socket,client_sock,client_ip,)))
-        #thread_client_ls[-1].start()
+        try:
+            sock, addr = tcp_socket.accept()
+            # store listener IP address and port
+            print("New listener:",addr)
+            listener_IP_list.append(addr)
+            # store tcp client socket
+            listener_tcp_sockets.append(sock)
+            send_list = create_streamer_send_list(listener_IP_list)
+            thread_client = threading.Thread(target=thread_vid_client,args=(udp_video_socket,addr,))
+            thread_client.start()
+        except:
+            pass
 
     except KeyboardInterrupt:
         print("Streaming terminated")
         break
 
-webcam.release()
-cv2.destroyAllWindows()
 udp_video_socket.close()
 tcp_socket.close()
-
-'''
-# set number of listeners
-num_listener = 2
-
-# accept connections from listeners
-for i in range(num_listener):
-    tcp_socket.listen()
-    sock, addr = tcp_socket.accept()
-    # store listener IP address
-    listener_IP_list.append(addr[0])
-    # store tcp client socket
-    listener_tcp_sockets.append(sock)
-
-# use client sockets to send all listener IPs to all listeners
-for sock in listener_tcp_sockets:
-    sock.sendall(str(listener_IP_list).encode())
-
-# function to create the streamer "send list"
-def create_streamer_send_list(num_listener):
-    send_list = []
-    i = 1
-    while True:
-        index = 2**i-2
-        if index < num_listener:
-            send_list.append(index)
-        else:
-            break
-        i += 1
-    return send_list
-
-send_list = create_streamer_send_list(num_listener)
-print(send_list)
-
-# wait for 1 seconds so the listeners have to time to prepare for communication
-time.sleep(1)
-
-####################################################################
-
-udp_video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-udp_video_socket.bind((streamer_IP, streamer_video_udp_port))
-
-webcam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-
-while webcam.isOpened():
-    try:
-        retval, frame = webcam.read()
-        frame = cv2.resize(frame, (50, 50))
-        buf = cv2.imencode('.jpg', frame)[1]
-
-        for i in send_list:
-            udp_video_socket.sendto(buf, (listener_IP_list[i], listener_video_udp_port))
-        cv2.imshow("Streamer",frame)
-        cv2.waitKey(33)
-
-    except KeyboardInterrupt:
-        print("Streaming terminated")
-        break
-
-webcam.release()
-cv2.destroyAllWindows()
-udp_video_socket.close()
-tcp_socket.close()
-'''
