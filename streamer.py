@@ -17,9 +17,6 @@ streamer_IP = '127.0.0.1'
 streamer_tcp_port = 60000
 streamer_audio_udp_port = 60001
 streamer_video_udp_port = 60002
-listener_tcp_port = 60003
-listener_audio_udp_port = 60004
-listener_video_udp_port = 60005
 
 # print streamer info
 print("Streamer Name: " + streamer_name)
@@ -45,6 +42,7 @@ def create_streamer_send_list(listener_IP_list):
         else:
             break
         i += 1
+    print("send list:",send_list)
     return send_list
 
 def video_streamer():
@@ -78,15 +76,10 @@ def thread_client_commander():
     global APP_STATE
     while APP_STATE:
         dl = []
-        #ping_time = 100
-        #for i in listener_IP_list:
-        #    dl.append({"ip":i,"ping":ping_time})
-        #d = {"data":dl}
-        #print(d)
-        print(listener_IP_list)
+        print("listeners list:", listener_IP_list)
         for i in range(len(listener_tcp_sockets)-1,-1,-1):
             try:
-                mssg = '{}:{}'.format(i,json.dumps(listener_IP_list))
+                mssg = '{}'.format(json.dumps(listener_IP_list))
                 listener_tcp_sockets[i].send(mssg.encode())
             except:
                 del listener_IP_list[i]
