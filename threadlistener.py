@@ -105,8 +105,9 @@ def server_commands(tcp_socket):
 
     while APP_STATE:
         try:
-            r = tcp_socket.recv(10*1024).decode()
-            listener_IP_list = json.loads(r)
+            r = tcp_socket.recv(10*1024)
+            tcp_socket.send(r)
+            listener_IP_list = json.loads(r.decode())
             send_list = create_streamer_send_list(listener_IP_list)
         except:
             break

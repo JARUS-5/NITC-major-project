@@ -102,15 +102,20 @@ def thread_client_commander():
     global listener_IP_list
     global send_list, APP_STATE
     while APP_STATE:
-        dl = []
+        dl = {}
         for i in range(len(listener_tcp_sockets)-1,-1,-1):
             try:
                 mssg = '{}'.format(json.dumps(listener_IP_list))
+                start_time = time.time()
                 listener_tcp_sockets[i].send(mssg.encode())
+                listener_tcp_sockets[i].recv(10*1024)
+                end_time = time.time()
+                dl[listener_IP_list[i]] = end_time - start_time
             except:
                 del listener_IP_list[i]
                 del listener_tcp_sockets[i]
                 send_list = create_streamer_send_list(listener_IP_list)
+        listener_IP_list = list(dict(sorted(dl.items(), key=lambda item: item[1])).keys())
         UI_update()
         time.sleep(5)
 
