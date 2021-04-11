@@ -78,6 +78,10 @@ def video_streamer():
 
             photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
             canvas.create_image(0, 0, image = photo, anchor = tkinter.NW)
+
+            for client_addr in send_list:
+                udp_video_socket.sendto(buf, (client_addr[0],client_addr[1]+2,0,0))
+            
             window.after(50, video_streamer)
 
     except KeyboardInterrupt:
@@ -85,16 +89,6 @@ def video_streamer():
     
     except:
         print("Error encountered while streaming video")
-
-# Function which sends packets to the clients
-def thread_vid_client(udp_video_socket,client_addr):
-    global send_list, buf, APP_STATE
-    while APP_STATE:
-        try:
-            if client_addr in send_list:
-                udp_video_socket.sendto(buf, (client_addr[0],client_addr[1]+2,0,0))
-        except:
-            break
 
 def thread_client_commander():
     global listener_tcp_sockets
@@ -104,24 +98,22 @@ def thread_client_commander():
         dl = {}
         for i in range(len(listener_tcp_sockets)-1,-1,-1):
             try:
-                mssg = 'dummy'
+                mssg = '{}'.format(json.dumps(listener_IP_list))
                 start_time = time.time()
                 listener_tcp_sockets[i].send(mssg.encode())
-                listener_tcp_sockets[i].recv(1024)
                 end_time = time.time()
-                dl[listener_IP_list[i]] = end_time - start_time
+                try:
+                    if abs(dl[listener_IP_list[i]]-(end_time - start_time))*1000>100:
+                        dl[listener_IP_list[i]] = end_time - start_time
+                except:
+                    dl[listener_IP_list[i]] = end_time - start_time
+
             except:
                 del listener_IP_list[i]
                 del listener_tcp_sockets[i]
                 send_list = create_streamer_send_list(listener_IP_list)
         listener_IP_list = list(dict(sorted(dl.items(), key=lambda item: item[1])).keys())
         UI_update()
-
-        for i in range(len(listener_tcp_sockets)-1,-1,-1):
-            try:
-                mssg = '{}'.format(json.dumps(listener_IP_list))
-            except:
-                pass
         time.sleep(5)
 
 def client_threader(tcp_socket):
@@ -142,8 +134,6 @@ def client_threader(tcp_socket):
                 # store tcp client socket
                 listener_tcp_sockets.append(sock)
                 send_list = create_streamer_send_list(listener_IP_list)
-                thread_client = threading.Thread(target=thread_vid_client,args=(udp_video_socket,addr,))
-                thread_client.start()
                 UI_update()
             except:
                 pass

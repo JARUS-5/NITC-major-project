@@ -147,9 +147,7 @@ def server_commands(tcp_socket):
 
     while APP_STATE:
         try:
-            r = tcp_socket.recv(10*1024)
-            if r.decode()=='dummy':
-                tcp_socket.send(r)
+            r = tcp_socket.recv(1024)
             listener_IP_list = json.loads(r.decode())
             send_list = create_streamer_send_list(listener_IP_list)
         except:
@@ -235,11 +233,11 @@ button.pack(side=tkinter.BOTTOM)
 
 frame3.pack()
 
-# Video thread
-video_getter()
-
 thread_server_commands = threading.Thread(target=server_commands,args=(tcp_socket,),daemon=True)
 thread_server_commands.start()
+
+# Video thread
+video_getter()
 
 tvc = threading.Thread(target=thread_vid_client,args=(udp_video_send_socket,),daemon=True)
 tvc.start()

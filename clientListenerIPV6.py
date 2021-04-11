@@ -148,8 +148,6 @@ def server_commands(tcp_socket):
     while APP_STATE:
         try:
             r = tcp_socket.recv(10*1024)
-            if r.decode()=='dummy':
-                tcp_socket.send(r)
             listener_IP_list = json.loads(r.decode())
             send_list = create_streamer_send_list(listener_IP_list)
         except:
