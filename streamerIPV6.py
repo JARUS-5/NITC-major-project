@@ -9,8 +9,9 @@ import PIL.Image, PIL.ImageTk
 APP_STATE = True
 
 # get streamers's IP address
-streamer_name = socket.gethostname()
-streamer_IP = socket.gethostbyname(streamer_name)
+s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM, 0)
+s.connect(('2001:888:2000:d::a2', 80, 0, 0)) # Connect to python server
+streamer_IP = s.getsockname()[0]
 
 # define all port numbers
 streamer_tcp_port = 60000
@@ -33,7 +34,6 @@ buf = 0
 #------------------------------------------------
 
 # print streamer info
-print("Streamer Name: " + streamer_name)
 print("Streamer IP: " + streamer_IP)
 
 #----------------FUNCTIONS-----------------------
@@ -44,7 +44,7 @@ def callback(in_data, frame_count, time_info, status):
     # sizeof(in_data) = 2048 bytes for RATE=8K
     global send_list,listener_IP_list, udp_audio_socket
     for i in send_list:
-        udp_audio_socket.sendto(in_data, (i[0], i[1]+1))
+        udp_audio_socket.sendto(in_data, (i[0], i[1]+1,0,0))
     return (None, pyaudio.paContinue)
 
 # function to create the streamer "send list"
@@ -92,7 +92,7 @@ def thread_vid_client(udp_video_socket,client_addr):
     while APP_STATE:
         try:
             if client_addr in send_list:
-                udp_video_socket.sendto(buf, (client_addr[0],client_addr[1]+2))
+                udp_video_socket.sendto(buf, (client_addr[0],client_addr[1]+2,0,0))
         except:
             break
 
@@ -183,17 +183,17 @@ def Stop_Services(event):
 #--------------SOCKETS AND THREADING-------------
 
 # create TCP socket and bind it to streamer's IP and tcp port
-tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+tcp_socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM,0)
 tcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-tcp_socket.bind((streamer_IP, streamer_tcp_port))
+tcp_socket.bind((streamer_IP, streamer_tcp_port,0,0))
 
 # UDP video socket
-udp_video_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-udp_video_socket.bind((streamer_IP, streamer_video_udp_port))
+udp_video_socket = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM,0)
+udp_video_socket.bind((streamer_IP, streamer_video_udp_port,0,0))
 
 # UDP Audio socket
-udp_audio_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-udp_audio_socket.bind((streamer_IP, streamer_audio_udp_port))
+udp_audio_socket = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM,0)
+udp_audio_socket.bind((streamer_IP, streamer_audio_udp_port,0,0))
 
 webcam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 

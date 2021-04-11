@@ -1,2 +1,6 @@
 testingfile.py
 .vscode
+build
+dist
+*.spec
+pastarchive

@@ -7,6 +7,8 @@ import PIL.Image, PIL.ImageTk
 
 #------------------CONSTANTS---------------------
 
+streamer_IP = '127.0.0.1' # default
+
 APP_STATE = True
 listener_IP_list = []
 send_list = []
@@ -17,11 +19,8 @@ RATE = 8000
 CHUNK = 1024
 
 # get listener's IP address
-#listener_name = socket.gethostname()
-#listener_IP = socket.gethostbyname(streamer_name)
-
-listener_name = 'JARUS'
-listener_IP = '127.0.0.1'
+listener_name = socket.gethostname()
+listener_IP = socket.gethostbyname(listener_name)
 
 # define all port numbers
 streamer_tcp_port = 60000
@@ -31,20 +30,66 @@ listener_tcp_port = 60003
 listener_audio_udp_port = 60004
 listener_video_udp_port = 60005
 
-streamer_IP = "127.0.0.1"
-
 # print listener info
 print("Listener Name: " + listener_name)
 print("Listener IP: " + listener_IP)
 
 #------------------------------------------------
 
+#---------------CONNECT--------------------------
+
+def Get_streamer_ip(event):
+    global streamer_IP, entry1, entry2
+    global listener_tcp_port
+    global listener_audio_udp_port
+    global listener_video_udp_port
+
+    streamer_IP = entry1.get()
+    listener_tcp_port = int(entry2.get())
+    listener_audio_udp_port = listener_tcp_port + 1
+    listener_video_udp_port = listener_tcp_port + 2
+    configure.destroy()
+
+# Tkinter window
+configure = tkinter.Tk()
+configure.title("Let's connect!")
+
+label = tkinter.Label(
+    configure,
+    text="Enter the IPV4 address of the streamer",
+    width=50,
+    height=4
+)
+label.pack()
+
+entry1 = tkinter.Entry(configure)
+entry1.pack(pady=(0,10))
+
+debuglabel = tkinter.Label(
+    configure,
+    text="\nAdvanced settings for debugging"+
+    "\n\nTCP port number for client",
+    width=50,
+    height=4
+)
+debuglabel.pack()
+
+entry2 = tkinter.Entry(configure)
+entry2.insert(0,str(listener_tcp_port))
+entry2.pack(pady=(0,10))
+
+buttonst = tkinter.Button(master=configure,text="Connect",width=10,height=4,bg="green",fg="white")
+buttonst.bind("<Button-1>",Get_streamer_ip)
+buttonst.pack(pady=(10,10))
+
+configure.mainloop()
+
 #----------------FUNCTIONS-----------------------
 
 def callback(in_data, frame_count, time_info, status):
     global udp_audio_socket, send_list
     try:
-        data = udp_audio_socket.recv(2500)
+        data = udp_audio_socket.recv(3000)
         for i in send_list:
             udp_audio_socket.sendto(data, (listener_IP_list[i], listener_audio_udp_port))
         return (data, pyaudio.paContinue)
@@ -65,9 +110,6 @@ def video_getter():
 
     except KeyboardInterrupt:
         print("Streaming terminated")
-    
-    #except:
-    #    print("Error encountered while streaming video")
 
 def create_streamer_send_list(listener_IP_list):
     global listener_IP, listener_tcp_port, APP_STATE
@@ -106,7 +148,8 @@ def server_commands(tcp_socket):
     while APP_STATE:
         try:
             r = tcp_socket.recv(10*1024)
-            tcp_socket.send(r)
+            if r.decode()=='dummy':
+                tcp_socket.send(r)
             listener_IP_list = json.loads(r.decode())
             send_list = create_streamer_send_list(listener_IP_list)
         except:
