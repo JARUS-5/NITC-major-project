@@ -38,7 +38,7 @@ print("Listener IP: " + listener_IP)
 
 #---------------CONNECT--------------------------
 
-def Get_streamer_ip(event):
+def Get_streamer_ip():
     global streamer_IP, entry1, entry2
     global listener_tcp_port
     global listener_audio_udp_port
@@ -48,6 +48,7 @@ def Get_streamer_ip(event):
     listener_tcp_port = int(entry2.get())
     listener_audio_udp_port = listener_tcp_port + 1
     listener_video_udp_port = listener_tcp_port + 2
+    configure.quit()
     configure.destroy()
 
 # Tkinter window
@@ -78,8 +79,12 @@ entry2 = tkinter.Entry(configure)
 entry2.insert(0,str(listener_tcp_port))
 entry2.pack(pady=(0,10))
 
-buttonst = tkinter.Button(master=configure,text="Connect",width=10,height=4,bg="green",fg="white")
-buttonst.bind("<Button-1>",Get_streamer_ip)
+buttonst = tkinter.Button(
+    master=configure,
+    text="Connect",
+    width=10,height=4,
+    bg="green",fg="white",
+    command=Get_streamer_ip)
 buttonst.pack(pady=(10,10))
 
 configure.mainloop()
@@ -91,7 +96,7 @@ def callback(in_data, frame_count, time_info, status):
     try:
         data = udp_audio_socket.recv(3000)
         for i in send_list:
-            udp_audio_socket.sendto(data, (listener_IP_list[i], listener_audio_udp_port))
+            udp_audio_socket.sendto(data, (i[0], i[1]+1))
         return (data, pyaudio.paContinue)
 
     except socket.timeout:

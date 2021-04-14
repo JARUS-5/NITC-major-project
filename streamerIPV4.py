@@ -7,6 +7,7 @@ import PIL.Image, PIL.ImageTk
 #------------------CONSTANTS---------------------
 
 APP_STATE = True
+DEBUG = True
 
 # get streamers's IP address
 streamer_name = socket.gethostname()
@@ -94,27 +95,34 @@ def video_streamer():
 def thread_client_commander():
     global listener_tcp_sockets
     global listener_IP_list
-    global send_list, APP_STATE
+    global send_list, APP_STATE, DEBUG
+    dl = {}
     while APP_STATE:
-        dl = {}
         for i in range(len(listener_tcp_sockets)-1,-1,-1):
             try:
-                mssg = '{}'.format(json.dumps(listener_IP_list))
-                start_time = time.time()
-                listener_tcp_sockets[i].send(mssg.encode())
-                end_time = time.time()
-                try:
-                    # Inorder to eliminate race condition
-                    if abs(dl[listener_IP_list[i]]-(end_time - start_time))*1000>2000:
+                if DEBUG==True:
+                    dl[listener_IP_list[i]] = i
+                    mssg = '{}'.format(json.dumps(listener_IP_list))
+                    listener_tcp_sockets[i].send(mssg.encode())
+                else:
+                    mssg = '{}'.format(json.dumps(listener_IP_list))
+                    start_time = (time.time())*1000
+                    listener_tcp_sockets[i].send(mssg.encode())
+                    end_time = (time.time())*1000
+                    try:
+                        # Inorder to eliminate race condition
+                        if abs(dl[listener_IP_list[i]]-(end_time - start_time))>2:
+                            dl[listener_IP_list[i]] = end_time - start_time
+                        elif end_time-start_time==0:
+                            dl[listener_IP_list] = i
+                    except:
                         dl[listener_IP_list[i]] = end_time - start_time
-                except:
-                    dl[listener_IP_list[i]] = end_time - start_time
-
             except:
                 del listener_IP_list[i]
                 del listener_tcp_sockets[i]
                 send_list = create_streamer_send_list(listener_IP_list)
-        listener_IP_list = list(dict(sorted(dl.items(), key=lambda item: item[1])).keys())
+        if len(listener_IP_list)==len(dl):
+            listener_IP_list = list(dict(sorted(dl.items(), key=lambda item: item[1])).keys())
         UI_update()
         time.sleep(5)
 
