@@ -4,14 +4,14 @@
 Python 3
 
 ### Setting up project environment
-After cloning the repo
+If you are using Windows, after cloning the repo
 ```
-pip3 install -r requirements.txt
+pip3 install -r pyrequirements.txt
 ```
-or 
+or if you are using Anaconda
 ```
-conda install --file requirements.txt
+conda create --name majorproject --file condarequirements.txt
+conda activate majorproject
 ```
-if you are using Anaconda.
 
 Assuming your python/anaconda installation went well, that's all you have to do.
