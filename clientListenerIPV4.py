@@ -39,7 +39,8 @@ print("Listener IP: " + listener_IP)
 #---------------CONNECT--------------------------
 
 def Get_streamer_ip():
-    global streamer_IP, entry1, entry2
+    global streamer_IP, listener_IP 
+    global entry1, entry2, entry3
     global listener_tcp_port
     global listener_audio_udp_port
     global listener_video_udp_port
@@ -48,6 +49,7 @@ def Get_streamer_ip():
     listener_tcp_port = int(entry2.get())
     listener_audio_udp_port = listener_tcp_port + 1
     listener_video_udp_port = listener_tcp_port + 2
+    listener_IP = entry3.get()
     configure.quit()
     configure.destroy()
 
@@ -68,12 +70,31 @@ entry1.pack(pady=(0,10))
 
 debuglabel = tkinter.Label(
     configure,
-    text="\nAdvanced settings for debugging"+
-    "\n\nTCP port number for client",
+    text="\nAdvanced settings for debugging",
     width=50,
     height=4
 )
-debuglabel.pack()
+debuglabel.pack(pady=(0,5))
+
+iplabel = tkinter.Label(
+    configure,
+    text="Enter the custom IPV4 address of your client",
+    width=50,
+    height=4
+)
+iplabel.pack()
+
+entry3 = tkinter.Entry(configure)
+entry3.insert(0,listener_IP)
+entry3.pack(pady=(0,10))
+
+portlabel = tkinter.Label(
+    configure,
+    text="Enter the custom port of your client",
+    width=50,
+    height=4
+)
+portlabel.pack()
 
 entry2 = tkinter.Entry(configure)
 entry2.insert(0,str(listener_tcp_port))
@@ -101,9 +122,13 @@ def callback(in_data, frame_count, time_info, status):
 
     except socket.timeout:
         return (b'0', pyaudio.paComplete)
+    except:
+        print("A client connection closed")
+        return (b'0', pyaudio.paContinue)
 
 def video_getter():
     global buf, photo, udp_video_socket
+    global udp_video_send_socket, send_list
     try:
         buf =  udp_video_socket.recv(70*1024) # sizeof(buf) = ~50000
         jpnp = np.frombuffer(buf, dtype = np.uint8)
@@ -111,6 +136,10 @@ def video_getter():
 
         photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
         canvas.create_image(0, 0, image = photo, anchor = tkinter.NW)
+
+        for client_addr in send_list:
+            udp_video_send_socket.sendto(buf, (client_addr[0],client_addr[1]+2))
+        
         window.after(50, video_getter)
 
     except KeyboardInterrupt:
@@ -129,15 +158,6 @@ def create_streamer_send_list(listener_IP_list):
             break
         i += 1
     return send_list
-
-def thread_vid_client(udp_video_send_socket):
-    global send_list, buf, APP_STATE
-    while APP_STATE:
-        try:
-            for client_addr in send_list:
-                udp_video_send_socket.sendto(buf, (client_addr[0],client_addr[1]+2))
-        except:
-            break
 
 def UI_update():
     global num_list_str,send_list_str
@@ -243,9 +263,6 @@ thread_server_commands.start()
 
 # Video thread
 video_getter()
-
-tvc = threading.Thread(target=thread_vid_client,args=(udp_video_send_socket,),daemon=True)
-tvc.start()
 
 window.mainloop()
 Stop_Services('dummy')
