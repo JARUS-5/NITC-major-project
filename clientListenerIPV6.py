@@ -116,6 +116,7 @@ configure.mainloop()
 def callback(in_data, frame_count, time_info, status):
     global udp_audio_socket, send_list
     try:
+        udp_audio_socket.sendto(b'Hello',(streamer_IP,streamer_audio_udp_port,0,0))
         data = udp_audio_socket.recv(3000)
         for i in send_list:
             udp_audio_socket.sendto(data, (i[0], i[1]+1,0,0))
@@ -131,6 +132,7 @@ def video_getter():
     global buf, photo, udp_video_socket
     global udp_video_send_socket, send_list
     try:
+        udp_video_socket.sendto(b'Hello',(streamer_IP,streamer_video_udp_port,0,0))
         buf =  udp_video_socket.recv(70*1024) # sizeof(buf) = ~50000
         jpnp = np.frombuffer(buf, dtype = np.uint8)
         frame = cv2.imdecode(jpnp, cv2.IMREAD_COLOR)
