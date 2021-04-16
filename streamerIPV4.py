@@ -135,7 +135,7 @@ def video_streamer():
             for client_addr in send_list:
                 udp_video_socket.sendto(buf, (client_addr[0],client_addr[1]+2))
             
-            window.after(1, video_streamer)
+            window.after(50, video_streamer)
 
     except KeyboardInterrupt:
         print("Streaming terminated")

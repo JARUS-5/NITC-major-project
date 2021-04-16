@@ -34,6 +34,58 @@ buf = 0
 
 #------------------------------------------------
 
+def Get_streamer_ip():
+    global streamer_IP
+    global entry1, entry2
+    global streamer_tcp_port
+    global streamer_audio_udp_port
+    global streamer_video_udp_port
+
+    streamer_IP = entry1.get()
+    streamer_tcp_port = int(entry2.get())
+    streamer_audio_udp_port = streamer_tcp_port + 1
+    streamer_video_udp_port = streamer_tcp_port + 2
+    configure.quit()
+    configure.destroy()
+
+# Tkinter window
+configure = tkinter.Tk()
+configure.title("Let's connect!")
+
+label = tkinter.Label(
+    configure,
+    text="Enter the IPV4 address of the streamer\n(127.0.0.1 for local testing)",
+    width=50,
+    height=4
+)
+label.pack()
+
+entry1 = tkinter.Entry(configure)
+entry1.insert(0,streamer_IP)
+entry1.pack(pady=(0,10))
+
+portlabel = tkinter.Label(
+    configure,
+    text="Enter the custom port for streamer",
+    width=50,
+    height=4
+)
+portlabel.pack()
+
+entry2 = tkinter.Entry(configure)
+entry2.insert(0,str(streamer_tcp_port))
+entry2.pack(pady=(0,10))
+
+buttonst = tkinter.Button(
+    master=configure,
+    text="Start",
+    width=10,height=4,
+    bg="green",fg="white",
+    command=Get_streamer_ip)
+buttonst.pack(pady=(10,10))
+
+configure.mainloop()
+
 # print streamer info
 print("Streamer IP: " + streamer_IP)
 
@@ -94,7 +146,7 @@ def video_streamer():
 def thread_client_commander():
     global listener_tcp_sockets
     global listener_IP_list
-    global send_list, APP_STATE
+    global send_list, APP_STATE, DEBUG
     dl = {}
     while APP_STATE:
         for i in range(len(listener_tcp_sockets)-1,-1,-1):
