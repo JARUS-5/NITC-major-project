@@ -207,11 +207,11 @@ tcp_socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM,0)
 tcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 tcp_socket.bind((listener_IP, listener_tcp_port,0,0))
 tcp_socket.connect((streamer_IP, streamer_tcp_port,0,0))
-tcp_socket.settimeout(20)
+tcp_socket.settimeout(None)
 
 udp_video_socket = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM,0)
 udp_video_socket.bind((listener_IP, listener_video_udp_port,0,0))
-udp_video_socket.settimeout(20)
+udp_video_socket.settimeout(None)
 udp_video_socket.sendto(b'Hello',(streamer_IP,streamer_video_udp_port,0,0))
 
 udp_video_send_socket = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM,0)

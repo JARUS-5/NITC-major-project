@@ -184,7 +184,7 @@ def client_threader(tcp_socket):
     global send_list, APP_STATE
 
     tcp_socket.listen(10)
-    tcp_socket.settimeout(5)
+    tcp_socket.settimeout(100)
     while APP_STATE:
         try:
             # Extra try except for tcp_socket timeout
